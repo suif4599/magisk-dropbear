@@ -1,0 +1,28 @@
+diff --git a/src/svr-authpubkey.c b/src/svr-authpubkey.c
+index 3191c2e..80af477 100644
+--- a/src/svr-authpubkey.c
++++ b/src/svr-authpubkey.c
+@@ -582,7 +582,11 @@ static int checkpubkeyperms() {
+ 	TRACE(("enter checkpubkeyperms"))
+ 
+ 	/* Walk back up path checking permissions, stopping at either homedir,
+-	 * or root if the path is outside of the homedir. */
++	 * or root if the path is outside of the homedir.
++	 *
++	 * Android port: also stop at the -D authorized_keys directory. On
++	 * Android /data is drwxrwx--x by design (group-writable), so without
++	 * this early stop every pubkey auth attempt fails the upstream walk. */
+ 	while ((sep = strrchr(path, '/')) != NULL) {
+ 		if (sep == path) {	/* root directory */
+ 			sep++;
+@@ -592,7 +596,9 @@ static int checkpubkeyperms() {
+ 			TRACE(("checkpubkeyperms: bad perm on %s", path))
+ 			ret = DROPBEAR_FAILURE;
+ 		}
+-		if (strcmp(path, ses.authstate.pw_dir) == 0 || strcmp(path, "/") == 0) {
++		if (strcmp(path, ses.authstate.pw_dir) == 0 || strcmp(path, "/") == 0
++				|| (svr_opts.authorized_keys_dir != NULL
++					&& strcmp(path, svr_opts.authorized_keys_dir) == 0)) {
+ 			break;
+ 		}
+ 	}

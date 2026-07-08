@@ -1,0 +1,6 @@
+id=magisk-dropbear
+name=Magisk Dropbear
+version=@VERSION@
+versionCode=@VERSION_CODE@
+author=suif4599
+description=SSH Client for Android

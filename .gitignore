@@ -1,0 +1,12 @@
+*~
+.*.swp
+
+# nix
+/.direnv/
+/result
+/result-*
+
+# build artifacts
+/build-android/
+
+.vscode/
