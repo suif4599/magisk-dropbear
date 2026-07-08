@@ -1,0 +1,37 @@
+magisk-dropbear
+===============
+
+This repository packages the Dropbear SSH suite
+(https://github.com/mkj/dropbear) as a Magisk module for Android.
+
+It contains only build scripts, a Magisk module template, and one small
+Android-specific patch against upstream. The Dropbear source itself is NOT
+stored in this repository — it is pulled in at build time as a git
+submodule under dropbear/, pointing unmodified at the upstream tree.
+
+
+Licensing and attribution
+-------------------------
+
+Packaging code in this repository
+    Build scripts (scripts/), Magisk module template (magisk-template/),
+    and the Android-specific patch (patches/).
+    Copyright (c) 2026 suif4599.
+    Licensed under the MIT License. See LICENSE.
+
+Dropbear SSH (built from the dropbear/ submodule)
+    Copyright (c) 2002-2020 Matt Johnston.
+    Portions copyright (c) 2004 Mihnea Stoenescu.
+    Distributed under Dropbear's own MIT-style license. See dropbear/LICENSE
+    for the full text, which also carries notices for additional third-party
+    components statically linked into the binaries:
+      - LibTomCrypt   — see dropbear/libtomcrypt/LICENSE
+      - LibTomMath    — see dropbear/libtommath/LICENSE
+      - OpenSSH       (sshpty.c, loginrec.c, atomicio.c, strlcat)
+      - PuTTY         (key import code in keyimport.c)
+      - TweetNaCl     (curve25519 implementation)
+
+
+Binary distributions of the Magisk module bundle all four license texts
+under a legal/ directory inside the zip. See magisk-template/legal/NOTICE
+for the binary-distribution notice that ships with the module.

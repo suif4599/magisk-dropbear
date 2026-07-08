@@ -50,7 +50,7 @@ done
 
 rm -f "$zip"
 rm -rf "$STAGING"
-mkdir -p "$STAGING/bin"
+mkdir -p "$STAGING/bin" "$STAGING/legal"
 
 # Copy template tree, then render module.prop with the version placeholders.
 cp -r "$TEMPLATE/." "$STAGING/"
@@ -61,6 +61,15 @@ sed -e "s/@VERSION@/$version/g" \
 for bin in $BINARIES; do
   cp -f "$OUT/$bin" "$STAGING/bin/$bin"
 done
+
+# Bundle license texts for compliance. Dropbear's LICENSE references the
+# libtom licenses, so all four files must ship together — they're statically
+# linked into the binaries.
+cp -f "$ROOT/LICENSE"                 "$STAGING/legal/LICENSE-packaging.txt"
+cp -f "$SRC/LICENSE"                  "$STAGING/legal/LICENSE-dropbear.txt"
+cp -f "$SRC/libtomcrypt/LICENSE"      "$STAGING/legal/LICENSE-libtomcrypt.txt"
+cp -f "$SRC/libtommath/LICENSE"       "$STAGING/legal/LICENSE-libtommath.txt"
+# magisk-template/legal/NOTICE was already copied via the template tree.
 
 ( cd "$STAGING" && zip -qr "$zip" . )
 echo "==> wrote $zip"
