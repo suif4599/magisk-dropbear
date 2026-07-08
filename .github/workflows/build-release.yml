@@ -1,0 +1,81 @@
+name: build-release
+
+# Build the Magisk module and publish a release tagged after the bundled
+# Dropbear version. Same-version rebuilds (e.g. packaging-only changes) move
+# the existing tag to the current commit and replace the release assets.
+#
+# Triggers:
+#   - push to main        — packaging code changed, ship a new build
+#   - workflow_dispatch   — manual rebuild (e.g. after bumping the submodule)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # required to move tags and create the release
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout (with submodule)
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 0   # tag operations need full history
+
+      - name: Install Nix
+        uses: DeterminateSystems/nix-installer-action@v16
+
+      - name: Build
+        run: bash scripts/build.sh
+
+      - name: Compute version metadata
+        id: meta
+        run: |
+          # build-magisk.sh produces exactly one zip per run.
+          zip_path="$(ls build-android/magisk-dropbear-v*.zip | head -n1)"
+          base="$(basename "$zip_path")"
+          version="${base#magisk-dropbear-}"     # strip prefix -> v2026.92.zip
+          version="${version%.zip}"              # strip suffix -> v2026.92
+          echo "zip_path=$zip_path"     >> "$GITHUB_OUTPUT"
+          echo "version=$version"       >> "$GITHUB_OUTPUT"
+          echo "tag=$version"           >> "$GITHUB_OUTPUT"   # already starts with v
+          echo "-- detected version: $version"
+          echo "-- release tag    : $version"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: magisk-dropbear-${{ steps.meta.outputs.version }}-${{ github.run_id }}
+          path: ${{ steps.meta.outputs.zip_path }}
+          retention-days: 30
+
+      - name: Move release tag to current commit
+        # Same dropbear version + changed packaging -> tag must point at the
+        # new commit so the release's source code matches the binary.
+        run: |
+          tag="${{ steps.meta.outputs.tag }}"
+          git tag -f "$tag" HEAD
+          git push origin "refs/tags/$tag" --force
+
+      - name: Create / update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          name: Magisk Dropbear ${{ steps.meta.outputs.version }}
+          files: ${{ steps.meta.outputs.zip_path }}
+          body: |
+            Automated build of the Magisk Dropbear packaging.
+
+            - **Dropbear version:** `${{ steps.meta.outputs.version }}`
+            - **Packaging commit:** `${{ github.sha }}`
+            - **Build run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            License texts for all bundled components are included under
+            `legal/` inside the zip.
+          make_latest: true
